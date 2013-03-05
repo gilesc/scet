@@ -1,0 +1,69 @@
+#!/usr/bin/env python2
+
+import gzip, xml.sax, sys, os
+from collections import namedtuple
+
+Article = namedtuple("Article","pmid,title,text")
+Article.__str__ = lambda s: "\t".join([x.encode("utf-8") for x in [str(s.pmid), s.title, s.text]])
+
+class MedlineHandler(xml.sax.ContentHandler):
+    def __init__(self):
+        self.articles = []
+        self.reset()
+
+    def reset(self):
+        self.pmid = ""
+        self.title = ""
+        self.text = ""
+        self.is_pmid = False
+        self.is_title = False
+        self.is_text = False
+
+
+    def startElement(self, name, attrs):
+        if name=="PMID":
+            self.is_pmid = True
+        elif name=="ArticleTitle":
+            self.is_title = True
+        elif name=="AbstractText":
+            self.is_text = True
+
+    def characters(self, ch):
+        if self.is_pmid and not self.pmid:
+            self.pmid = int(ch)
+        elif self.is_title:
+            self.title += ch.replace("\t", "")
+        elif self.is_text:
+            self.text += ch.replace("\t", "")
+
+    def endElement(self, name):
+        if self.is_pmid and name=="PMID":
+            self.is_pmid = False
+        elif self.is_title and name=="ArticleTitle":
+            self.is_title = False
+        elif self.is_text and name=="AbstractText":
+            self.is_text = False
+        elif name=="MedlineCitation":
+            print Article(self.pmid, self.title, self.text)
+            self.reset()
+
+def print_medline_xml_file(medline_file):
+    parser = xml.sax.make_parser()
+    handler = MedlineHandler()
+    parser.setContentHandler(handler)
+    with gzip.open(medline_file) as in_file:
+        parser.parse(in_file)
+
+def print_medline_xml_directory(medline_dir):
+    for file in sorted(os.listdir(medline_dir)):
+        if not file.endswith(".xml.gz"):
+            continue
+        file = os.path.join(medline_dir,file)
+        print_medline_xml_file(file)
+
+if __name__ == "__main__":
+    path = sys.argv[1]
+    if os.path.isdir(path):
+        print_medline_xml_directory(path)
+    else:
+        print_medline_xml_file(path)
