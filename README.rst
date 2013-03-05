@@ -11,6 +11,8 @@ Building and installation
 
 SCET has no external dependencies, except a C++ compiler. Simply run:
 
+.. code-block::
+
     make
     sudo make install
 
@@ -23,11 +25,15 @@ SCET requires two types of input data, 1) a synonym dictionary, and 2) a text co
 
 The format of the synonym dictionary is a tab-delimited file, where the first column is the term ID (an arbitrary string), and subsequent fields are synonyms for that term. For example, some gene symbols:
 
+.. code-block::
+
     A1BG    A1B     ABG     GAB     HYST2477
     A2M     A2MD    CPAMD5  FWP007  S863-7
     A2MP1   A2MP
 
 The text corpus is simply a flat text file, where each line is a different document. You can therefore run the entire program like so:
+
+.. code-block::
 
     scet synonym-file < corpus.txt
 
@@ -40,6 +46,8 @@ When analysis is complete, a 3-column file will be output. The first two columns
 
 A Concrete Example
 ==================
+
+.. code-block::
 
     curl ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz \ 
         | gzip -dc | awk 'BEGIN {OFS="\t"} $1==9606 {print $3,$5}' \
