@@ -27,9 +27,9 @@ The format of the synonym dictionary is a tab-delimited file, where the first co
 
 .. code-block::
 
-    ID1	A1BG    A1B     ABG     GAB     HYST2477
-    ID2	A2M     A2MD    CPAMD5  FWP007  S863-7
-    ID3	A2MP1   A2MP
+    A1BG	A1BG    A1B     ABG     GAB     HYST2477
+    A2M	A2M     A2MD    CPAMD5  FWP007  S863-7
+    A2MP1	A2MP1   A2MP
 
 The text corpus is simply a flat text file, where each line is a different document. You can therefore run the entire program like so:
 
@@ -42,13 +42,13 @@ Output Format
 
 When analysis is complete, a tab-delimited file will be output, showing different metrics about the occurrences and co-occurrences of significantly interacting entities. The following fields are present:
 
-- Entity1: the ID of the first entity
-- Entity2: the ID of the second entity
-- Mentions1: the number of times Entity1 occurred in the text
-- Mentions2: the number of times Entity2 occurred in the text
-- Comentions: the number of times the entities co-occurred
-- MutualInformation: the (natural log) mutual information of the interaction between the entities. (see Wren references, below)
-- Likelihood: the negative natural log of the likelihood ratio for this pair of entities, calculated via Poisson approximation (see Bordag reference, below)
+- **Entity1**: the ID of the first entity
+- **Entity2**: the ID of the second entity
+- **Mentions1**: the number of times Entity1 occurred in the text
+- **Mentions2**: the number of times Entity2 occurred in the text
+- **Comentions**: the number of times the entities co-occurred
+- **MutualInformation**: the (natural log) mutual information of the interaction between the entities. (see Wren references, below)
+- **Likelihood**: the negative natural log of the likelihood ratio for this pair of entities, calculated via Poisson approximation (see Bordag reference, below)
 
 A Concrete Example
 ==================
@@ -56,7 +56,7 @@ A Concrete Example
 .. code-block::
 
     curl ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_info.gz \ 
-        | gzip -dc | awk 'BEGIN {OFS="\t"} $1==9606 {print $3,$5}' \
+        | gzip -dc | awk 'BEGIN {OFS="\t"} $1==9606 {print $3,$3,$5}' \
         | sed 's/|/\t/g' > gene_symbols
     wget http://corygil.es/data/medline.sample.gz
     zcat medline.sample.gz | ./scet gene_symbols > result.txt

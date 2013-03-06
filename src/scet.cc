@@ -133,5 +133,4 @@ int main(int argc, char* argv[]) {
             printf("%s\t%s\t%d\t%d\t%d\t%0.4f\t%0.4f\n", e1_id.c_str(), e2_id.c_str(), nA, nB, nAB, mi, likelihood);
         }
     }
-    // TODO: Add option to do Jaccard or set MIM thresholds
 }
