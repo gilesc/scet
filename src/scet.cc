@@ -26,7 +26,8 @@ vector<string> get_chunk(istream& is) {
 void usage() {
     cerr << "USAGE: scet [options] term-file < corpus\n\n"
         " -h         : show this help\n"
-        " -p (int)   : number of processors to use (default 1)\n"
+        " -p (int)   : number of processors to use (default 1)\n\n"
+        "Output thresholds:\n"
         " -l (float) : negative log likelihood cutoff (default 10)\n"
         " -m (float) : log mutual information cutoff (default 0)\n";
     exit(1);
