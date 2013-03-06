@@ -1,6 +1,6 @@
 PREFIX=/usr/local
 CC=g++
-CXXFLAGS=-std=c++0x -fopenmp
+CXXFLAGS=-std=c++0x -fopenmp -O3
 LDFLAGS=-lgomp
 
 all: scet

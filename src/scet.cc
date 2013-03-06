@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
     t.build();
 
     map<int,int> mentions;
-    map<pair<int,int>, int> comentions;
+    map<int, map<int, int> > comentions;
     vector<string> lines;
     int N_PROCESSED = 0;
 
@@ -110,31 +110,34 @@ int main(int argc, char* argv[]) {
             for (auto kv : M)
                 mentions[kv.first] += kv.second;
             for (auto kv : C)
-                comentions[kv.first] += kv.second;
+                comentions[kv.first.first][kv.first.second] += kv.second;
         }
         lines.clear();
     }
     #pragma omp taskwait
     }
 
-    cerr << "Entity1\tEntity2\tMentions1\tMentions2\tComentions\tMutualInformation\tLikelihood" << endl;
-    for (auto kv : comentions) {
-        int e1 = kv.first.first;
-        int e2 = kv.first.second;
-        int nAB = kv.second;
-        int nA = mentions[e1];
-        int nB = mentions[e2];
-        double mi = log(nAB * N_PROCESSED / (nA * nB));
+    cout << "Entity1\tEntity2\tMentions1\tMentions2\tComentions\tMutualInformation\tLikelihood" << endl;
+    for (auto kv1 : comentions) {
+        int e1 = kv1.first;
+        for (auto kv2 : kv1.second) {
+            int e2 = kv2.first;
+            int nAB = kv2.second;
 
-        double k = nAB;
-        double lambda = 1.0 * nA * nB / N_PROCESSED;
-        double likelihood = k * (log(k)-log(lambda)-1) + 0.5 * log(2 * M_PI * k) + lambda;
+            int nA = mentions[e1];
+            int nB = mentions[e2];
+            double mi = log(nAB * N_PROCESSED / (nA * nB));
 
-        string& e1_id = t_id2extid[e1];
-        string& e2_id = t_id2extid[e2];
-        
-        if ((likelihood > LIKELIHOOD_CUTOFF) && (mi > MI_CUTOFF)) {
-            printf("%s\t%s\t%d\t%d\t%d\t%0.4f\t%0.4f\n", e1_id.c_str(), e2_id.c_str(), nA, nB, nAB, mi, likelihood);
+            double k = nAB;
+            double lambda = 1.0 * nA * nB / N_PROCESSED;
+            double likelihood = k * (log(k)-log(lambda)-1) + 0.5 * log(2 * M_PI * k) + lambda;
+
+            string& e1_id = t_id2extid[e1];
+            string& e2_id = t_id2extid[e2];
+            
+            if ((likelihood > LIKELIHOOD_CUTOFF) && (mi > MI_CUTOFF)) {
+                printf("%s\t%s\t%d\t%d\t%d\t%0.4f\t%0.4f\n", e1_id.c_str(), e2_id.c_str(), nA, nB, nAB, mi, likelihood);
+            }
         }
     }
 }
