@@ -28,6 +28,7 @@ void usage() {
         " -h         : show this help\n"
         " -p (int)   : number of processors to use (default 1)\n\n"
         "Output thresholds:\n"
+        " -a         : ignore all thresholds and output all pairs (overrides -l and -m)\n";
         " -l (float) : negative log likelihood cutoff (default 10)\n"
         " -m (float) : log mutual information cutoff (default 0)\n";
     exit(1);
@@ -36,16 +37,18 @@ void usage() {
 int main(int argc, char* argv[]) {
     double LIKELIHOOD_CUTOFF = 10;
     double MI_CUTOFF = 0;
+    bool OUTPUT_ALL = false;
     omp_set_num_threads(1);
 
     int c;
 
-    while ((c = getopt(argc, argv, "hl:m:p:")) != -1) {
+    while ((c = getopt(argc, argv, "ahl:m:p:")) != -1) {
         switch (c) {
             case 'p': omp_set_num_threads(atoi(optarg)); break;
             case 'h': usage(); break;
             case 'l': LIKELIHOOD_CUTOFF = atof(optarg); break;
             case 'm': MI_CUTOFF = atof(optarg); break;
+            case 'a': OUTPUT_ALL = true; break;
         }
     }
 
@@ -118,25 +121,52 @@ int main(int argc, char* argv[]) {
     }
 
     cout << "Entity1\tEntity2\tMentions1\tMentions2\tComentions\tMutualInformation\tLikelihood" << endl;
-    for (auto kv1 : comentions) {
-        int e1 = kv1.first;
-        for (auto kv2 : kv1.second) {
-            int e2 = kv2.first;
-            int nAB = kv2.second;
+    if (!OUTPUT_ALL) {
+        for (auto kv1 : comentions) {
+            int e1 = kv1.first;
+            for (auto kv2 : kv1.second) {
+                int e2 = kv2.first;
+                int nAB = kv2.second;
 
-            int nA = mentions[e1];
-            int nB = mentions[e2];
-            double mi = log(nAB * N_PROCESSED / (nA * nB));
+                int nA = mentions[e1];
+                int nB = mentions[e2];
+                double mi = log(nAB * N_PROCESSED / (1.0 * nA * nB));
 
-            double k = nAB;
-            double lambda = 1.0 * nA * nB / N_PROCESSED;
-            double likelihood = k * (log(k)-log(lambda)-1) + 0.5 * log(2 * M_PI * k) + lambda;
-
+                double k = nAB;
+                double lambda = 1.0 * nA * nB / N_PROCESSED;
+                double likelihood = k * (log(k)-log(lambda)-1) + 0.5 * log(2 * M_PI * k) + lambda;
+                string& e1_id = t_id2extid[e1];
+                string& e2_id = t_id2extid[e2];
+                
+                if ((likelihood > LIKELIHOOD_CUTOFF) && (mi > MI_CUTOFF)) {
+                    printf("%s\t%s\t%d\t%d\t%d\t%0.4f\t%0.4f\n", e1_id.c_str(), e2_id.c_str(), nA, nB, nAB, mi, likelihood);
+                }
+            }
+        }
+    } else {
+        for (int e1=0; e1<t_id2extid.size(); e1++) {
             string& e1_id = t_id2extid[e1];
-            string& e2_id = t_id2extid[e2];
-            
-            if ((likelihood > LIKELIHOOD_CUTOFF) && (mi > MI_CUTOFF)) {
-                printf("%s\t%s\t%d\t%d\t%d\t%0.4f\t%0.4f\n", e1_id.c_str(), e2_id.c_str(), nA, nB, nAB, mi, likelihood);
+            int nA = mentions[e1];
+
+            for (int e2=0; e2<t_id2extid.size(); e2++) {
+                string& e2_id = t_id2extid[e2];
+                int nB = mentions[e2];
+
+                int nAB = comentions[e1][e2];
+                double mi, likelihood;
+
+                if (nAB > 0) {
+                    mi = log(nAB * N_PROCESSED / (1.0 * nA * nB));
+                    double k = nAB;
+                    double lambda = 1.0 * nA * nB / N_PROCESSED;
+                    likelihood = k * (log(k)-log(lambda)-1) + 0.5 * log(2 * M_PI * k) + lambda;
+                } else {
+                    mi = -INFINITY;
+                    likelihood = -INFINITY;
+                }
+                
+                printf("%s\t%s\t%d\t%d\t%d\t%0.4f\t%0.4f\n", 
+                        e1_id.c_str(), e2_id.c_str(), nA, nB, nAB, mi, likelihood);
             }
         }
     }
