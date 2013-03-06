@@ -5,7 +5,9 @@
 #include <sstream>
 #include <memory>
 #include <algorithm>
-#include <ahocorasick.hpp>
+
+#include "ahocorasick.h"
+
 using namespace std;
 
 namespace ahocorasick {

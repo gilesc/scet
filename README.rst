@@ -40,9 +40,15 @@ The text corpus is simply a flat text file, where each line is a different docum
 Output Format
 =============
 
-When analysis is complete, a 3-column file will be output. The first two columns are term IDs for significantly-cooccurring entities. The third column is a double indicating how significant the interaction is: the higher, the more significant. Note that by default, only significantly co-occurring entities will be output.
+When analysis is complete, a tab-delimited file will be output, showing different metrics about the occurrences and co-occurrences of significantly interacting entities. The following fields are present:
 
-(TODO: give more specifics about derivation.) 
+- Entity1: the ID of the first entity
+- Entity2: the ID of the second entity
+- Mentions1: the number of times Entity1 occurred in the text
+- Mentions2: the number of times Entity2 occurred in the text
+- Comentions: the number of times the entities co-occurred
+- MutualInformation: the (natural log) mutual information of the interaction between the entities. (see Wren references, below)
+- Likelihood: the negative natural log of the likelihood ratio for this pair of entities, calculated via Poisson approximation (see Bordag reference, below)
 
 A Concrete Example
 ==================
