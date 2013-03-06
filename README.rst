@@ -27,9 +27,9 @@ The format of the synonym dictionary is a tab-delimited file, where the first co
 
 .. code-block::
 
-    A1BG    A1B     ABG     GAB     HYST2477
-    A2M     A2MD    CPAMD5  FWP007  S863-7
-    A2MP1   A2MP
+    ID1	A1BG    A1B     ABG     GAB     HYST2477
+    ID2	A2M     A2MD    CPAMD5  FWP007  S863-7
+    ID3	A2MP1   A2MP
 
 The text corpus is simply a flat text file, where each line is a different document. You can therefore run the entire program like so:
 
