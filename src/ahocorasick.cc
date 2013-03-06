@@ -157,28 +157,3 @@ remove_overlaps(vector<Match>& v) {
 }
 
 }
-/*
-int main(int argc, char** argv) {
-	ahocorasick::Trie t;
-
-	ifstream file(argv[1]);
-	string line;
-	while (getline(file, line)) {
-		stringstream linestrm(line);
-		string field;
-		getline(linestrm, field, '\t');
-		int id;
-		istringstream(field) >> id;
-		getline(linestrm, field, '\t');
-		cerr << id << "\t" << field << endl;
-		t.add(id, field);
-	}	
-	t.build();
-	string s = "he likes his caffeine she hers";
-	vector<ahocorasick::Match> result = t.search(s);
-	for (int i=0; i<result.size(); i++) {
-		cout << result[i].id << "\t" << result[i].start << "\t" << result[i].end << endl;
-	}
-	return 0;
-}
-*/

@@ -17,7 +17,7 @@ vector<string> get_chunk(istream& is) {
     vector<string> lines;
     string line;
     int n = 0;
-    while ((n++ < 10000) && getline(is, line)) {
+    while (getline(is, line) && (n++ < 10000)) {
         lines.push_back(line);
     }
     return lines;
@@ -36,10 +36,11 @@ void usage() {
 int main(int argc, char* argv[]) {
     double LIKELIHOOD_CUTOFF = 10;
     double MI_CUTOFF = 0;
+    omp_set_num_threads(1);
 
     int c;
 
-    while ((c = getopt(argc, argv, "p:")) != -1) {
+    while ((c = getopt(argc, argv, "hl:m:p:")) != -1) {
         switch (c) {
             case 'p': omp_set_num_threads(atoi(optarg)); break;
             case 'h': usage(); break;
@@ -51,7 +52,7 @@ int main(int argc, char* argv[]) {
     if (optind != (argc - 1))
         usage();
 
-    ifstream strm(argv[1]);
+    ifstream strm(argv[optind]);
     ahocorasick::Trie t;
     int id;
     string token, line, name;
@@ -82,7 +83,7 @@ int main(int argc, char* argv[]) {
     vector<string> lines;
     int N_PROCESSED = 0;
 
-    #pragma omp parallel private (line, lines) shared (mentions, comentions)
+    #pragma omp parallel shared (mentions, comentions, N_PROCESSED) private (line, lines)
     {
     #pragma omp master
     while (!(lines = get_chunk(cin)).empty())
@@ -94,6 +95,7 @@ int main(int argc, char* argv[]) {
         for (string line : lines) {
             #pragma omp atomic
             N_PROCESSED++;
+
             vector<ahocorasick::Match> matches = t.search(line);
             for (ahocorasick::Match m1 : matches) {
                 M[m1.id]++;
@@ -112,6 +114,7 @@ int main(int argc, char* argv[]) {
         }
         lines.clear();
     }
+    #pragma omp taskwait
     }
 
     cerr << "Entity1\tEntity2\tMentions1\tMentions2\tComentions\tMutualInformation\tLikelihood" << endl;

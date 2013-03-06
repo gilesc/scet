@@ -1,4 +1,6 @@
 *.o
 *.txt
+*.swp
+*.swo
 /data
 scet
