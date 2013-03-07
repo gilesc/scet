@@ -10,6 +10,7 @@
 #include <omp.h>
 
 #include "ahocorasick.h"
+#include "acronym.h"
 
 using namespace std;
 
@@ -28,7 +29,8 @@ void usage() {
         " -h         : show this help\n"
         " -p (int)   : number of processors to use (default 1)\n\n"
         "Output thresholds:\n"
-        " -a         : ignore all thresholds and output all pairs (overrides -l and -m)\n"
+        " -a         : ignore thresholds and output all pairs with at least 1 co-occurrence\n"
+        "              (overrides -l and -m)\n"
         " -l (float) : negative log likelihood cutoff (default 10)\n"
         " -m (float) : log mutual information cutoff (default 0)\n";
     exit(1);
@@ -99,11 +101,12 @@ int main(int argc, char* argv[]) {
             #pragma omp atomic
             N_PROCESSED++;
 
+            replace_acronyms_with_long_forms(line);
+
             vector<ahocorasick::Match> matches = t.search(line);
             set<int> ids;
             for (ahocorasick::Match match : matches) 
                 ids.insert(match.id);
-            
             for (int e1 : ids) {
                 M[e1]++;
                 for (int e2 : ids)
@@ -125,53 +128,26 @@ int main(int argc, char* argv[]) {
     }
 
     cout << "Entity1\tEntity2\tMentions1\tMentions2\tComentions\tMutualInformation\tLikelihood" << endl;
-    if (!OUTPUT_ALL) {
-        for (auto kv1 : comentions) {
-            int e1 = kv1.first;
-            for (auto kv2 : kv1.second) {
-                int e2 = kv2.first;
-                int nAB = kv2.second;
+    for (auto kv1 : comentions) {
+        int e1 = kv1.first;
+        string& e1_id = t_id2extid[e1];
+        int nA = mentions[e1];
 
-                int nA = mentions[e1];
-                int nB = mentions[e2];
-                double mi = log(nAB * N_PROCESSED / (1.0 * nA * nB));
+        for (auto kv2 : kv1.second) {
+            int e2 = kv2.first;
+            string& e2_id = t_id2extid[e2];
+            int nB = mentions[e2];
+            int nAB = kv2.second;
 
-                double k = nAB;
-                double lambda = 1.0 * nA * nB / N_PROCESSED;
-                double likelihood = k * (log(k)-log(lambda)-1) + 0.5 * log(2 * M_PI * k) + lambda;
-                string& e1_id = t_id2extid[e1];
-                string& e2_id = t_id2extid[e2];
-                
-                if ((likelihood > LIKELIHOOD_CUTOFF) && (mi > MI_CUTOFF)) {
-                    printf("%s\t%s\t%d\t%d\t%d\t%0.4f\t%0.4f\n", e1_id.c_str(), e2_id.c_str(), nA, nB, nAB, mi, likelihood);
-                }
-            }
-        }
-    } else {
-        for (int e1=0; e1<t_id2extid.size(); e1++) {
-            string& e1_id = t_id2extid[e1];
-            int nA = mentions[e1];
+            double mi = log(nAB) + log(N_PROCESSED) - log(nA) - log(nB);
+            double k = nAB;
+            double lambda = 1.0 * nA * nB / N_PROCESSED;
+            double likelihood = k * (log(k)-log(lambda)-1) + 0.5 * log(2 * M_PI * k) + lambda;
 
-            for (int e2=(e1+1); e2<t_id2extid.size(); e2++) {
-                string& e2_id = t_id2extid[e2];
-                int nB = mentions[e2];
-
-                int nAB = comentions[e1][e2];
-                double mi, likelihood;
-
-                if (nAB > 0) {
-                    mi = log(nAB * N_PROCESSED / (1.0 * nA * nB));
-                    double k = nAB;
-                    double lambda = 1.0 * nA * nB / N_PROCESSED;
-                    likelihood = k * (log(k)-log(lambda)-1) + 0.5 * log(2 * M_PI * k) + lambda;
-                } else {
-                    mi = -INFINITY;
-                    likelihood = -INFINITY;
-                }
-                
+            if (OUTPUT_ALL || ((likelihood > LIKELIHOOD_CUTOFF) && (mi > MI_CUTOFF))) {
                 printf("%s\t%s\t%d\t%d\t%d\t%0.4f\t%0.4f\n", 
                         e1_id.c_str(), e2_id.c_str(), nA, nB, nAB, mi, likelihood);
             }
         }
     }
-}
+} 
