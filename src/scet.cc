@@ -17,7 +17,7 @@ vector<string> get_chunk(istream& is) {
     vector<string> lines;
     string line;
     int n = 0;
-    while (getline(is, line) && (n++ < 10000)) {
+    while (getline(is, line) && (n++ < 20000)) {
         lines.push_back(line);
     }
     return lines;
@@ -28,7 +28,7 @@ void usage() {
         " -h         : show this help\n"
         " -p (int)   : number of processors to use (default 1)\n\n"
         "Output thresholds:\n"
-        " -a         : ignore all thresholds and output all pairs (overrides -l and -m)\n";
+        " -a         : ignore all thresholds and output all pairs (overrides -l and -m)\n"
         " -l (float) : negative log likelihood cutoff (default 10)\n"
         " -m (float) : log mutual information cutoff (default 0)\n";
     exit(1);
@@ -100,22 +100,26 @@ int main(int argc, char* argv[]) {
             N_PROCESSED++;
 
             vector<ahocorasick::Match> matches = t.search(line);
-            for (ahocorasick::Match m1 : matches) {
-                M[m1.id]++;
-                for (ahocorasick::Match m2 : matches)
-                    if (m1.id < m2.id)
-                        C[pair<int,int>(m1.id, m2.id)]++;
+            set<int> ids;
+            for (ahocorasick::Match match : matches) 
+                ids.insert(match.id);
+            
+            for (int e1 : ids) {
+                M[e1]++;
+                for (int e2 : ids)
+                    if (e1 < e2)
+                        C[pair<int,int>(e1,e2)]++;
             }
         }
 
         #pragma omp critical
         {
+            cerr << N_PROCESSED << endl;
             for (auto kv : M)
                 mentions[kv.first] += kv.second;
             for (auto kv : C)
                 comentions[kv.first.first][kv.first.second] += kv.second;
         }
-        lines.clear();
     }
     #pragma omp taskwait
     }
@@ -148,7 +152,7 @@ int main(int argc, char* argv[]) {
             string& e1_id = t_id2extid[e1];
             int nA = mentions[e1];
 
-            for (int e2=0; e2<t_id2extid.size(); e2++) {
+            for (int e2=(e1+1); e2<t_id2extid.size(); e2++) {
                 string& e2_id = t_id2extid[e2];
                 int nB = mentions[e2];
 
