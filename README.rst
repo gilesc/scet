@@ -67,8 +67,7 @@ Auxiliary scripts
 Some scripts are included in the script/ folder that assist with using SCET on biomedical data.
 
 - **medline-txt** converts NCBI MEDLINE XML into tab-delimited output.
-- **obo-synonyms** converts an Open Biomedical Ontology format file to a synonym file.
-    - (Note that obo-synonyms requires the pyparsing library to be installed)
+- **obo-synonyms** converts an Open Biomedical Ontology format file to a synonym file (Note: requires the pyparsing library to be installed).
 
 References
 ==========
