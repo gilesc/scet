@@ -1,0 +1,39 @@
+#!/usr/bin/env python2
+"""
+Convert an OBO into a appropriately formatted synonym file.
+"""
+
+import argparse
+from pyparsing import alphanums, Word, Literal, dblQuotedString, OneOrMore, Group, \
+        Optional, restOfLine
+
+chars = alphanums+"_-."
+token = Word(chars)
+
+stanza_name = Literal("[").suppress() + Word(alphanums) + Literal("]").suppress()
+value = (Word(chars+":") | dblQuotedString)
+
+# names aren't quoted
+name_declaration = Group(Literal("name") + Literal(": ").suppress() + restOfLine)
+tag_value_pair = name_declaration | (Group(Word(chars) + Literal(": ").suppress() + value) \
+        + restOfLine.suppress())
+
+stanza = Group(stanza_name + OneOrMore(tag_value_pair))
+header = Group(OneOrMore(tag_value_pair))
+obo = header + OneOrMore(stanza)
+
+search = lambda term,sk: [v.replace('"','') for (k,v) in term[1:] if k==sk]
+
+parser = argparse.ArgumentParser(description="Convert an OBO into an appropriately formatted synonym file.")
+parser.add_argument("obo_path", nargs=1)
+args = parser.parse_args()
+
+for term in obo.parseFile(args.obo_path[0])[1:]:
+    try:
+        if term[0] == "Term":
+            id = search(term,"id")[0]
+            name = search(term,"name")[0]
+            synonyms = search(term,"synonym")
+            print "\t".join([id] + [name] + synonyms)
+    except IndexError:
+        continue

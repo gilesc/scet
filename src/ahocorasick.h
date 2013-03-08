@@ -50,6 +50,7 @@ private:
 	shared_ptr<Node> root;
 	Settings settings;
 	void add_fail_transitions(shared_ptr<Node> n);
+    int n_words;
 };
 
 vector<Match> remove_overlaps(vector<Match>&);

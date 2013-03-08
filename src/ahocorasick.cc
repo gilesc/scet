@@ -41,14 +41,17 @@ Trie::Trie() {
 	Settings s;
 	settings = s;
 	root = shared_ptr<Node>(new Node());
+    n_words = 0;
 }
 
 Trie::Trie(Settings& s) {
 	settings = s;
 	root = shared_ptr<Node>(new Node());
+    n_words = 0;
 }
 
 void Trie::add(int id, string s) {
+    n_words++;
 	shared_ptr<Node> current = root;
 	if (!settings.case_sensitive)
 		transform(s.begin(), s.end(), s.begin(), ::tolower);
@@ -104,7 +107,7 @@ set<int> word_boundaries(const string& s) {
 vector<Match>
 Trie::search(string s) {
 	vector<Match> matches;
-	if (s.size() == 0)
+	if ((s.size() == 0) || (!n_words))
 		return matches;
 
 	set<int> boundaries;
