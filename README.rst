@@ -35,7 +35,7 @@ The text corpus is simply a flat text file, where each line is a different docum
 
 .. code-block::
 
-    scet synonym-file < corpus.txt
+    scet -i synonym-file < corpus.txt
 
 Output Format
 =============
@@ -61,17 +61,21 @@ A Concrete Example
     wget http://corygil.es/data/medline.sample.gz
     zcat medline.sample.gz | ./scet gene_symbols > result.txt
 
-medline2txt
-===========
+Auxiliary scripts
+=================
 
-Also included is a Python script, medline2txt, that will convert MEDLINE XML into a 3-column text format: PMID, title, and abstract. To get the full MEDLINE database, you have to have a license from NCBI.
+Some scripts are included in the script/ folder that assist with using SCET on biomedical data.
+
+- **medline-txt** converts NCBI MEDLINE XML into tab-delimited output.
+- **obo-synonyms** converts an Open Biomedical Ontology format file to a synonym file.
+    - (Note that obo-synonyms requires the pyparsing library to be installed)
 
 References
 ==========
 
-* http://bioinformatics.oxfordjournals.org/content/20/3/389.long
-* http://www.ncbi.nlm.nih.gov/pmc/articles/PMC526381/
-* http://wortschatz.uni-leipzig.de/~sbordag/papers/Bordag_05.pdf
+- http://bioinformatics.oxfordjournals.org/content/20/3/389.long
+- http://www.ncbi.nlm.nih.gov/pmc/articles/PMC526381/
+- http://wortschatz.uni-leipzig.de/~sbordag/papers/Bordag_05.pdf
 
 License
 =======
