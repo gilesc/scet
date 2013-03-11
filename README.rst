@@ -43,17 +43,20 @@ Output Format
 When analysis is complete, a tab-delimited file will be output, showing different metrics about the occurrences and co-occurrences of significantly interacting entities. 
 
 The following fields contain general information about each entity:
+
 - **Entity1**: the ID of the first entity
 - **Entity2**: the ID of the second entity
 - **Mentions1**: the number of documents Entity1 occurred in
 - **Mentions2**: the number of documents Entity2 occurred in
 
 The following fields measure information about direct co-occurrences of the two entities:
+
 - **Comentions**: the number of documents the entities co-occurred in
 - **MutualInformation**: the (natural log) mutual information of the interaction between the entities. (see Wren references, below)
 - **Likelihood**: the negative natural log of the likelihood ratio for this pair of entities, calculated via Poisson approximation (see Bordag reference, below)
 
 The following fields measure "indirect" relationships; i.e., whether Entity1 and Entity2 share many relationships with common intermediate entities.
+
 - **nShared**: the number of intermediate entities that Entity1 and Entity2 share
 - **nSignificantShared**: the number of intermediate entities that Entity1 and Entity2 share, where both Entity1 and Entity2 have a likelihood ratio > 8 with the intermediate
 - **Jaccard**: the Jaccard coefficient, calculated as the number of shared, significant entities, divided by the number of distinct significant entities related to both Entity1 and Entity2 (see Bordag)
