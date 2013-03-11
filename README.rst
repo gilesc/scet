@@ -71,7 +71,7 @@ A Concrete Example
         | gzip -dc | awk 'BEGIN {OFS="\t"} $1==9606 {print $3,$3,$5}' \
         | sed 's/|/\t/g' | sed 's/\t-//g' > gene_symbols
     wget http://corygil.es/data/medline.sample.gz
-    zcat medline.sample.gz | ./scet gene_symbols > result.txt
+    zcat medline.sample.gz | ./scet gene_symbols -i > result.txt
 
 Auxiliary scripts
 =================
