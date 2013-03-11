@@ -106,7 +106,7 @@ int main(int argc, char* argv[]) {
     ahocorasick::Trie cs(settings_cs);
 
     fill_trie(ci, CI_PATH, t_id2extid, t_extid2id);
-    fill_trie(ci, CS_PATH, t_id2extid, t_extid2id);
+    fill_trie(cs, CS_PATH, t_id2extid, t_extid2id);
 
     map<int,int> mentions;
     map<int, map<int, int> > comentions;
