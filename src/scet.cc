@@ -30,6 +30,7 @@ void usage() {
     cerr << "USAGE: scet [options] < corpus\n"
         "\nGeneral:\n"
         " -h         : show this help\n"
+        " -v         : verbose mode\n"
         " -p (int)   : number of processors to use (default 1)\n"
         "\nSynonym dictionaries (at least one is required):\n"
         " -i (path)  : a tab-delimited file containing terms to be searched case insensitively\n"
@@ -97,7 +98,7 @@ int main(int argc, char* argv[]) {
 
     int c;
 
-    while ((c = getopt(argc, argv, "hp:i:s:")) != -1) {
+    while ((c = getopt(argc, argv, "vhp:i:s:")) != -1) {
         switch (c) {
             case 'p': omp_set_num_threads(atoi(optarg)); break;
             case 'h': usage(); break;
