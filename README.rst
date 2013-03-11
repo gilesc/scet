@@ -37,6 +37,10 @@ The text corpus is simply a flat text file, where each line is a different docum
 
     scet -i synonym-file < corpus.txt
 
+The ``-i`` argument indicates that the synonyms are to be searched case-insensitively. You can provide an additional synonym file to be searched case-sensitively with ``-s``. SCET also comes with an acronym expansion module, which can be enabled with ``-a``; these options can be useful if you have synonyms which can be ambiguous (for example, "BED", "AIR", "AN", and "T" are all official HGNC gene symbols!).
+
+A full list of options can be viewed by running ``./scet`` without any arguments, or ``scet -h``.
+
 Output Format
 =============
 

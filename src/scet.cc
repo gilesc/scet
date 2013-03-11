@@ -35,11 +35,6 @@ void usage() {
         "\nSynonym dictionaries (at least one is required):\n"
         " -i (path)  : a tab-delimited file containing terms to be searched case insensitively\n"
         " -s (path)  : a tab-delimited file containing terms to be searched case sensitively\n"
-        "\nOutput thresholds:\n"
-        " -a         : ignore thresholds and output all pairs with at least 1 co-occurrence\n"
-        "              (overrides -l and -m)\n"
-        " -l (float) : negative log likelihood cutoff (default 10)\n"
-        " -m (float) : log mutual information cutoff (default 0)\n";
     exit(1);
 }
 
