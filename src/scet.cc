@@ -9,6 +9,7 @@
 #include <cstring>
 #include <unistd.h>
 #include <omp.h>
+#include <algorithm>
 
 #include "ahocorasick.h"
 #include "acronym.h"
@@ -39,6 +40,23 @@ void usage() {
         " -l (float) : negative log likelihood cutoff (default 10)\n"
         " -m (float) : log mutual information cutoff (default 0)\n";
     exit(1);
+}
+
+template <class T>
+pair<int,double> jaccard_coefficient (const set<T>& A, const set<T>& B) {
+    set<T> tmp;
+    set_intersection(A.begin(),A.end(),
+            B.begin(),B.end(),
+            inserter(tmp,tmp.end()));
+    int _intersection = tmp.size();
+    tmp.clear();
+    set_union(A.begin(),A.end(),
+            B.begin(),B.end(),
+            inserter(tmp,tmp.end()));
+    int _union = tmp.size();
+    if (!_union)
+        return pair<int,double>(0,0);
+    return pair<int, double>(_intersection, 1.0 * _intersection / _union);
 }
 
 void 
@@ -72,24 +90,20 @@ fill_trie(ahocorasick::Trie& t, string path,
 }
 
 int main(int argc, char* argv[]) {
-    double LIKELIHOOD_CUTOFF = 10;
-    double MI_CUTOFF = 0;
+    bool VERBOSE = false;
     string CI_PATH; 
     string CS_PATH;
-    bool OUTPUT_ALL = false;
     omp_set_num_threads(1);
 
     int c;
 
-    while ((c = getopt(argc, argv, "ahl:m:p:i:s:")) != -1) {
+    while ((c = getopt(argc, argv, "hp:i:s:")) != -1) {
         switch (c) {
             case 'p': omp_set_num_threads(atoi(optarg)); break;
             case 'h': usage(); break;
-            case 'l': LIKELIHOOD_CUTOFF = atof(optarg); break;
-            case 'm': MI_CUTOFF = atof(optarg); break;
             case 'i': CI_PATH = string(optarg); break;
             case 's': CS_PATH = string(optarg); break;
-            case 'a': OUTPUT_ALL = true; break;
+            case 'v': VERBOSE = true; break;
         }
     }
 
@@ -147,7 +161,8 @@ int main(int argc, char* argv[]) {
 
         #pragma omp critical
         {
-            cerr << N_PROCESSED << endl;
+            if (VERBOSE)
+                cerr << N_PROCESSED << endl;
             for (auto kv : M)
                 mentions[kv.first] += kv.second;
             for (auto kv : C)
@@ -157,18 +172,16 @@ int main(int argc, char* argv[]) {
     #pragma omp taskwait
     }
 
-    cout << "Entity1\tEntity2\tMentions1\tMentions2\tComentions\tMutualInformation\tLikelihood" << endl;
+    cout << "Entity1\tEntity2\tMentions1\tMentions2\tComentions\tMutualInformation\tLikelihood\tnShared\tnSignificantShared\tJaccard\tmeanMI\n";
     map<int, set<int> > related;
     map<int, map<int, float> > m_mi;
 
     for (auto kv1 : comentions) {
         int e1 = kv1.first;
-        string& e1_id = t_id2extid[e1];
         int nA = mentions[e1];
 
         for (auto kv2 : kv1.second) {
             int e2 = kv2.first;
-            string& e2_id = t_id2extid[e2];
             int nB = mentions[e2];
             int nAB = kv2.second;
 
@@ -177,10 +190,57 @@ int main(int argc, char* argv[]) {
             double lambda = 1.0 * nA * nB / N_PROCESSED;
             double likelihood = k * (log(k)-log(lambda)-1) + 0.5 * log(2 * M_PI * k) + lambda;
 
-            if (OUTPUT_ALL || ((likelihood > LIKELIHOOD_CUTOFF) && (mi > MI_CUTOFF))) {
-                printf("%s\t%s\t%d\t%d\t%d\t%0.4f\t%0.4f\n", 
-                        e1_id.c_str(), e2_id.c_str(), nA, nB, nAB, mi, likelihood);
+            m_mi[e1][e2] = mi;
+
+            if (likelihood > 8) {
+                related[e1].insert(e2);
+                related[e2].insert(e1);
             }
+        }
+    }
+
+    for (auto kv1 : related) {
+        int e1 = kv1.first;
+        int nA = mentions[e1];
+        map<int, int>& _comentions = comentions[e1];
+        map<int, float>& _mi1 = m_mi[e1];
+        string& e1_id = t_id2extid[e1];
+
+        for (auto kv2 : related) {
+            int e2 = kv2.first;
+            if (e2 < e1)
+                continue;
+            string& e2_id = t_id2extid[e2];
+
+            int nB = mentions[e2];
+            int nAB = _comentions.find(e2)!=_comentions.end() ? comentions[e1][e2] : 0;
+
+            double mi, likelihood;
+            if (nAB) {
+                mi = log(nAB) + log(N_PROCESSED) - log(nA) - log(nB);
+                int k = nAB;
+                double lambda = 1.0 * nA * nB / N_PROCESSED;
+                likelihood = k * (log(k)-log(lambda)-1) + 0.5 * log(2 * M_PI * k) + lambda;
+            } else {
+                mi = -INFINITY;
+                likelihood = -INFINITY;
+            }
+            pair<int,double> jaccard = jaccard_coefficient(kv1.second, kv2.second);
+
+            map<int, float>& _mi2 = m_mi[e2];
+            double mmim = 0;
+            int n_shared = 0;
+            for (auto Bpr : _mi1)
+                if (_mi2.find(Bpr.first) != _mi2.end()) {
+                    mmim = min(Bpr.second, _mi2[Bpr.first]);
+                    n_shared++;
+                }
+            if (mmim)
+                mmim /= n_shared;
+
+            printf("%s\t%s\t%d\t%d\t%d\t%0.4f\t%0.4f\t%d\t%d\t%0.4f\t%0.4f\n", 
+                    e1_id.c_str(), e2_id.c_str(), nA, nB, nAB, mi, likelihood, 
+                    n_shared, jaccard.first, jaccard.second, mmim);
         }
     }
 } 
