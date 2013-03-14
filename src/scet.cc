@@ -34,7 +34,7 @@ void usage() {
         " -p (int)   : number of processors to use (default 1)\n"
         "\nSynonym dictionaries (at least one is required):\n"
         " -i (path)  : a tab-delimited file containing terms to be searched case insensitively\n"
-        " -s (path)  : a tab-delimited file containing terms to be searched case sensitively\n"
+        " -s (path)  : a tab-delimited file containing terms to be searched case sensitively\n";
     exit(1);
 }
 
