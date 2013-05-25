@@ -10,7 +10,7 @@ clean:
 	rm scet
 
 install:
-	cp bin/* $(PREFIX)/bin
+	cp scet $(PREFIX)/bin
 
 .PHONY: all clean install
 

@@ -16,6 +16,10 @@
 
 using namespace std;
 
+enum Mode {
+    MENTION, COMENTION, IMPLICIT
+};
+
 vector<string> get_chunk(istream& is) {
     vector<string> lines;
     string line;
@@ -32,6 +36,10 @@ void usage() {
         " -h         : show this help\n"
         " -v         : verbose mode\n"
         " -p (int)   : number of processors to use (default 1)\n"
+        " -a         : output all entity pairs,\n" 
+        "              whether they are comentioned or not\n"
+        " -m         : output mode. one of: [mention, comention, implicit]\n"
+        "              (default implicit)\n"
         "\nSynonym dictionaries (at least one is required):\n"
         " -i (path)  : a tab-delimited file containing terms to be searched case insensitively\n"
         " -s (path)  : a tab-delimited file containing terms to be searched case sensitively\n";
@@ -87,18 +95,33 @@ fill_trie(ahocorasick::Trie& t, string path,
 
 int main(int argc, char* argv[]) {
     bool VERBOSE = false;
+    bool OUTPUT_ALL = false;
+    Mode MODE = IMPLICIT;
     string CI_PATH; 
     string CS_PATH;
     omp_set_num_threads(1);
 
     int c;
 
-    while ((c = getopt(argc, argv, "vhp:i:s:")) != -1) {
+    while ((c = getopt(argc, argv, "vhap:i:s:m:")) != -1) {
         switch (c) {
             case 'p': omp_set_num_threads(atoi(optarg)); break;
             case 'h': usage(); break;
             case 'i': CI_PATH = string(optarg); break;
             case 's': CS_PATH = string(optarg); break;
+            case 'a': OUTPUT_ALL = true;
+            case 'm': 
+                      if (!strcmp(optarg, "mention"))
+                          MODE = MENTION;
+                      else if (!strcmp(optarg,"comention"))
+                          MODE = COMENTION;
+                      else if (!strcmp(optarg, "implicit"))
+                          MODE = IMPLICIT;
+                      else {
+                          cerr << "ERROR: mode, if specified, must be one of: 'mention', 'comention', or 'implicit'! Aborting.\n";
+                          exit(1);
+                      }
+                      break;
             case 'v': VERBOSE = true; break;
         }
     }
@@ -120,6 +143,8 @@ int main(int argc, char* argv[]) {
 
     map<int,int> mentions;
     map<int, map<int, int> > comentions;
+    map<int,int> mentions_bd;
+    map<int, map<int, int> > comentions_bd;
     string line;
     vector<string> lines;
     int N_PROCESSED = 0;
@@ -131,7 +156,10 @@ int main(int argc, char* argv[]) {
     #pragma omp task
     {
         map<int,int> M;
-        map<pair<int,int>, int> C;
+        map<int, map<int, int>> C;
+        map<int,int> Bm;
+        map<int, map<int, int>> Bc;
+
 
         for (string line : lines) {
             #pragma omp atomic
@@ -149,9 +177,13 @@ int main(int argc, char* argv[]) {
 
             for (int e1 : ids) {
                 M[e1]++;
+                if (Bm.find(e1)==Bm.end()) Bm[e1] = N_PROCESSED+1;
                 for (int e2 : ids)
-                    if (e1 < e2)
-                        C[pair<int,int>(e1,e2)]++;
+                    if (e1 < e2) {
+                        C[e1][e2]++;
+                        if (Bc[e1].find(e2)==Bc[e1].end()) 
+                            Bc[e1][e2] = N_PROCESSED+1;
+                    }
             }
         }
 
@@ -161,14 +193,34 @@ int main(int argc, char* argv[]) {
                 cerr << N_PROCESSED << endl;
             for (auto kv : M)
                 mentions[kv.first] += kv.second;
-            for (auto kv : C)
-                comentions[kv.first.first][kv.first.second] += kv.second;
+            for (auto kv1 : C)
+                for (auto kv2 : kv1.second)
+                    comentions[kv1.first][kv2.first] += kv2.second;
+            for (auto kv : Bm)
+                if (!mentions_bd[kv.first])
+                   mentions_bd[kv.first] = kv.second;
+            for (auto kv1 : Bc)
+                for (auto kv2 : kv1.second)
+                    if (!comentions_bd[kv1.first][kv2.first])
+                        comentions_bd[kv1.first][kv2.first] = kv2.second;
         }
     }
     #pragma omp taskwait
     }
 
-    cout << "Entity1\tEntity2\tMentions1\tMentions2\tComentions\tMutualInformation\tLikelihood\tnShared\tnSignificantShared\tJaccard\tmeanMI\n";
+    if (MODE == MENTION) {
+        printf("Entity\tFirstObserved\tMentions\n");
+        for (auto kv : mentions) {
+            int id = kv.first;
+            printf("%s\t%d\t%d\n", t_id2extid[id].c_str(), 
+                    mentions_bd[id], kv.second);
+        }
+    } else { 
+    if (MODE == COMENTION)
+        cout << "Entity1\tEntity2\tFirstObserved\tComentions\n";
+    else if (MODE == IMPLICIT)
+        cout << "Entity1\tEntity2\tMentions1\tMentions2\tComentions\tMutualInformation\tLikelihood\tnShared\tnSignificantShared\tJaccard\tmeanMI\n";
+    
     map<int, set<int> > related;
     map<int, map<int, float> > m_mi;
 
@@ -180,6 +232,10 @@ int main(int argc, char* argv[]) {
             int e2 = kv2.first;
             int nB = mentions[e2];
             int nAB = kv2.second;
+            int birth_date = comentions_bd[e1][e2];
+            if (MODE == COMENTION)
+                printf("%s\t%s\t%d\t%d\n", t_id2extid[e1].c_str(), 
+                        t_id2extid[e2].c_str(), birth_date, nAB);
 
             double mi = log(nAB) + log(N_PROCESSED) - log(nA) - log(nB);
             double k = nAB;
@@ -218,6 +274,8 @@ int main(int argc, char* argv[]) {
                 double lambda = 1.0 * nA * nB / N_PROCESSED;
                 likelihood = k * (log(k)-log(lambda)-1) + 0.5 * log(2 * M_PI * k) + lambda;
             } else {
+                if (!OUTPUT_ALL)
+                    continue;
                 mi = -INFINITY;
                 likelihood = -INFINITY;
             }
@@ -238,5 +296,6 @@ int main(int argc, char* argv[]) {
                     e1_id.c_str(), e2_id.c_str(), nA, nB, nAB, mi, likelihood, 
                     n_shared, jaccard.first, jaccard.second, mmim);
         }
+    }
     }
 } 
